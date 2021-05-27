@@ -1,0 +1,11 @@
+{
+  "AppSyncApiName": "pubsub",
+  "DynamoDBBillingMode": "PAY_PER_REQUEST",
+  "DynamoDBEnableServerSideEncryption": false,
+  "AuthCognitoUserPoolId": {
+    "Fn::GetAtt": [
+      "authpubsub4df00bd3",
+      "Outputs.UserPoolId"
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+type SunscribedQueue @model @searchable{
+  id: ID!
+  username: String!
+  score: Int!
+  hasSubscribed: Boolean!
+  topic: String!
+}
