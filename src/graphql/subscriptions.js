@@ -1,6 +1,15 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
+export const onSunscriptionUpdate = /* GraphQL */ `
+  subscription OnSunscriptionUpdate($topic: String!) {
+    onSunscriptionUpdate(topic: $topic) {
+      username
+      hasSubscribed
+      topic
+    }
+  }
+`;
 export const onCreateSunscribedQueue = /* GraphQL */ `
   subscription OnCreateSunscribedQueue {
     onCreateSunscribedQueue {

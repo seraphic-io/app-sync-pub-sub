@@ -5,3 +5,28 @@ type SunscribedQueue @model @searchable{
   hasSubscribed: Boolean!
   topic: String!
 }
+
+schema {
+    query: Query
+    mutation: Mutation
+    subscription: Subscription
+}
+
+type Subscription {
+    onSunscriptionUpdate(topic: String!): Topic
+    @aws_subscribe(mutations: ["publishSubscription"])
+}
+
+type Mutation {
+    publishSubscription(username: String!, topic: String!, hasSubscribed: Boolean!): Topic!
+}
+
+type Topic {
+    username: String!
+    hasSubscribed: Boolean!
+    topic: String!
+}
+
+type Query {
+    me: String
+}

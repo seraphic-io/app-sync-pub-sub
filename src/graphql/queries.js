@@ -1,6 +1,11 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
+export const me = /* GraphQL */ `
+  query Me {
+    me
+  }
+`;
 export const getSunscribedQueue = /* GraphQL */ `
   query GetSunscribedQueue($id: ID!) {
     getSunscribedQueue(id: $id) {

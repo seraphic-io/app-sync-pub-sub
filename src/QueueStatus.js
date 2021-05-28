@@ -3,20 +3,24 @@ import { API, graphqlOperation } from 'aws-amplify'
 import { updateSunscribedQueue } from './graphql/mutations';
 import { listSunscribedQueues } from './graphql/queries';
 import { AmplifyButton } from '@aws-amplify/ui-react';
+import { publish } from "./pubsub";
 
 function QueueStatusView(props) {
-    const updateSubscription = async (id, update) => {
+    const updateSubscription = async (record, update) => {
         try {
             props.showLoading()
             // Update join/left status of record in datasource  
-            let result = await API.graphql(graphqlOperation(updateSunscribedQueue, {
+            await API.graphql(graphqlOperation(updateSunscribedQueue, {
                 input: {
                   hasSubscribed: update,
-                  id: id
+                  id: record.id
                 }
             }));
+
+            //Publish the notification to all users
+            await publish(record.topic, {username: record.username, hasSubscribed:  update})
             props.hideLoading();
-            console.log("result", result)
+            
         } catch(error) {
             props.hideLoading();
             console.log("[Error Updating Subscription]", error)
@@ -34,7 +38,7 @@ function QueueStatusView(props) {
             let list = topSubscriber.data.listSunscribedQueues.items
             if(list.length > 0) {
                 list.sort((a, b) => b.score - a.score);
-                updateSubscription(list[0].id, false);
+                updateSubscription(list[0], false);
             } else {
                 props.hideLoading();
                 alert(`No user has subscribed to topic ${topic}`)
@@ -51,8 +55,8 @@ function QueueStatusView(props) {
           <div className="theme-buttons">
             {
                 props.queue.hasSubscribed
-                ? <AmplifyButton onClick={() => updateSubscription(props.queue.id, false)} className="mb-2">Unsubscribe</AmplifyButton>
-                : <AmplifyButton onClick={() => updateSubscription(props.queue.id, true)}>Subscribe</AmplifyButton>
+                ? <AmplifyButton onClick={() => updateSubscription(props.queue, false)} className="mb-2">Unsubscribe</AmplifyButton>
+                : <AmplifyButton onClick={() => updateSubscription(props.queue, true)}>Subscribe</AmplifyButton>
             }
           </div>
           <div className="theme-buttons">  

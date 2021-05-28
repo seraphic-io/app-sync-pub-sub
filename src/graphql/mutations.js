@@ -1,6 +1,23 @@
 /* eslint-disable */
 // this is an auto generated file. This will be overwritten
 
+export const publishSubscription = /* GraphQL */ `
+  mutation PublishSubscription(
+    $username: String!
+    $topic: String!
+    $hasSubscribed: Boolean!
+  ) {
+    publishSubscription(
+      username: $username
+      topic: $topic
+      hasSubscribed: $hasSubscribed
+    ) {
+      username
+      hasSubscribed
+      topic
+    }
+  }
+`;
 export const createSunscribedQueue = /* GraphQL */ `
   mutation CreateSunscribedQueue(
     $input: CreateSunscribedQueueInput!
