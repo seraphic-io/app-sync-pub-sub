@@ -18,29 +18,45 @@ Amplify.configure(awsExports);
 class AppComponent extends Component {
   constructor(props) {
     super(props);
+    //Initialize default state
     this.state = {
       subscribedList: [],
       messageList: [],
       isLoading: false,
-
     }
     this.showLoading = this.showLoading.bind(this);
     this.hideLoading = this.hideLoading.bind(this);
     this.setupSubscription = this.setupSubscription.bind(this);
   }
 
-  componentWillMount = async () => {
-    console.log("Use Effect called 1")
+  // React life cycle method we are going to use this method to fetch already subscribed queues by user 
+  // We are using AWS AppSync GraphQL API with the mongodb datastore so that we can maintain the subscribed/unsubscribed status 
+  // of queues for user. So for each user we are going to have 5 recods each for one queue 
+  // Below is the GraphQL schema which we are going to use
+  // type SunscribedQueue @model @searchable{
+  //   id: ID!
+  //   username: String!
+  //   score: Int!
+  //   hasSubscribed: Boolean!
+  //   topic: String!
+  // }
+  componentWillMount = async () => { 
     this.showLoading();
-    let randomNumber = generateRandomNumber(maxScore)
+    
+    //Generate Random number which can be used to assign as a score
+    let randomNumber = generateRandomNumber(maxScore);
+
+    // Get list of already joined queues
     let alreadySubscribed = await API.graphql(graphqlOperation(listSunscribedQueues, {
       filter: { username: { eq: this.props.username } }
     }));
 
     let subscribedList = alreadySubscribed.data.listSunscribedQueues.items;
+
     await asyncForEach(topics, async (topic) => {
       try {
         let queueStatus = subscribedList.find((item) => item.topic === topic.id);
+        // Create new record if queue subscription record not found.
         if (!queueStatus) {
           let result = await API.graphql(graphqlOperation(createSunscribedQueue, {
             input: {
@@ -57,14 +73,16 @@ class AppComponent extends Component {
         console.log("[Error subscribed to queue]", error)
       }
     });
-    console.log("subscribedList", subscribedList)
+    
     this.setState({
       subscribedList
     })
     this.hideLoading();
 
-    this.setupSubscription();
-    this.setupOnCreateSubscription();
+    // Use GraphQL subscriber so that when ever new record is added/update we get the notification and 
+    // We will show the notification on UI
+    this.setupSubscription(); // Update Record subscriber
+    this.setupOnCreateSubscription();// Add Record subscriber
   }
 
   setupSubscription() {
@@ -72,22 +90,18 @@ class AppComponent extends Component {
       query: onUpdateSunscribedQueue,
       authMode: 'AMAZON_COGNITO_USER_POOLS',
     }).subscribe({
-      next: (data) => {
+      next: (data) => { // callback funtion which is called when a user join/left a queue
         let { subscribedList , messageList} = this.state;
 
         const updatedData = data.value.data.onUpdateSunscribedQueue;
-        console.log("updatedData", updatedData)
         let found = false;
-        console.log("subscribedList", subscribedList)
         let newsubscribedList = subscribedList.map((list) => {
-          console.log("list", list)
           if (list.id === updatedData.id) {
             found = true;
             list = updatedData
           }
           return list
         });
-        console.log("found", found)
         if (!found) {
           messageList.push({
             text: `${updatedData.username} has ${updatedData.hasSubscribed ? "Subscribed" : "Unsubscribed"} to ${updatedData.topic}`
@@ -97,7 +111,6 @@ class AppComponent extends Component {
           messageList,
           subscribedList: newsubscribedList
         })
-        // setSubscribedList(newsubscribedList);
       }
     })
   }
@@ -107,13 +120,11 @@ class AppComponent extends Component {
       query: onCreateSunscribedQueue,
       authMode: 'AMAZON_COGNITO_USER_POOLS',
     }).subscribe({
-      next: (data) => {
+      next: (data) => {// callback funtion which is called when a new user signup
         let { messageList } = this.state;
         let { username } = this.props;
 
         const updatedData = data.value.data.onCreateSunscribedQueue;
-        console.log("updatedData", updatedData)
-        
         if (updatedData.username !== username) {
           messageList.push({
             text: `${updatedData.username} has ${updatedData.hasSubscribed ? "Subscribed" : "Unsubscribed"} to ${updatedData.topic}`
@@ -127,7 +138,7 @@ class AppComponent extends Component {
   }
 
   componentWillUnmount() {
-    console.log("this.subscription",this.subscription.unsubscribe)
+    //unsubscribe the subscriber 
     if(this.subscription){
       this.subscription.unsubscribe();
     }
@@ -156,9 +167,11 @@ class AppComponent extends Component {
             <AmplifyGreetings username={this.props.username} handleAuthStateChange={this.props.handleAuthStateChange}/>
           <Row>
             <Col>
+              {/* Queue Viewer Component */}
               <QueueStatus list={subscribedList} hideLoading={this.hideLoading} showLoading={this.showLoading} />
             </Col>
             <Col>
+              {/* Notification Viewer Component */}
               <MessageList list={messageList} />
             </Col>
           </Row>
@@ -172,6 +185,7 @@ class AppComponent extends Component {
 function App() {
   const [userState, setAuthUser] = useState({});
 
+  // Handler with auth state is changed so that user will be shown home screen when user login successfully
   const handleAuthStateChange = (async (nextAuthState, authData) => {
     if (authData && nextAuthState === AuthState.SignedIn) {
       setAuthUser(authData)
@@ -183,13 +197,14 @@ function App() {
   return (
     <React.Fragment>
     {
-      userState.username 
-      ? <AppComponent 
+      userState.username // If user is login show them home page
+      ? <AppComponent // All the logic comes in this compenet which is in same file
           username={userState.username }
           handleAuthStateChange={handleAuthStateChange}
         >
         </AppComponent>
       : <AmplifyAuthenticator handleAuthStateChange={handleAuthStateChange}></AmplifyAuthenticator>
+      // Used AmplifyAuthenticator default UI for authentication provided by react amplify
     }
     </React.Fragment>
   );

@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { API, graphqlOperation } from 'aws-amplify'
 import { updateSunscribedQueue } from './graphql/mutations';
 import { listSunscribedQueues } from './graphql/queries';
-import { AmplifyAuthenticator, AmplifyGreetings, AmplifyButton } from '@aws-amplify/ui-react';
+import { AmplifyButton } from '@aws-amplify/ui-react';
+
 function QueueStatusView(props) {
     const updateSubscription = async (id, update) => {
         try {
             props.showLoading()
+            // Update join/left status of record in datasource  
             let result = await API.graphql(graphqlOperation(updateSunscribedQueue, {
                 input: {
                   hasSubscribed: update,
@@ -24,7 +26,8 @@ function QueueStatusView(props) {
     const removeTopUser = async(topic) => {
         
         try {
-            props.showLoading()
+            props.showLoading();
+            // Get top topSubscriber and remove from the queue
             let topSubscriber =  await API.graphql(graphqlOperation(listSunscribedQueues, {
                 filter: { topic: { eq: topic},  hasSubscribed: {eq: true}}
               }));
